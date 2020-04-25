@@ -295,7 +295,7 @@ scroll:
 ;;; CHR data
 
 .segment "CHR0a"
-.include "sprites.s"
+.include "sprite.s"
 
 .segment "CHR0b"
 .include "charset.s"

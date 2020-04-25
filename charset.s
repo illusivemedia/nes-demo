@@ -550,7 +550,7 @@ CHAR_Z = 26
 .byte 192
 .byte 192
 
-;Vertical border
+; Left Vertical border
 .byte 0
 .byte 0
 .byte 0
@@ -573,16 +573,139 @@ CHAR_Z = 26
 .byte 0
 .byte 0
 .byte 0
+
 .byte 0
 .byte 0
 .byte 0
 .byte 0
+
 .byte 255
 .byte 255
 .byte 3
 .byte 3
+
 .byte 3
 .byte 3
 .byte 3
 .byte 3
+
+; Right Vertical Border
+.byte 0
+.byte 0
+.byte 0
+.byte 0
+
+.byte 0
+.byte 0
+.byte 0
+.byte 0
+
 .byte 3
+.byte 3
+.byte 3
+.byte 3
+
+.byte 3
+.byte 3
+.byte 3
+.byte 3
+
+
+; Bottom Left Corner
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 192
+
+.byte 192
+
+.byte 192
+
+.byte 192
+
+.byte 192
+
+.byte 192
+
+.byte 255
+
+.byte 255
+
+;Bottom Horizontal Line
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 255
+
+.byte 255
+
+; Bottom RIght Corner
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 0
+
+.byte 3
+
+.byte 3
+
+.byte 3
+
+.byte 3
+
+.byte 3
+
+.byte 3
+
+.byte 255
+
+.byte 255

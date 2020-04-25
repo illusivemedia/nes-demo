@@ -144,51 +144,88 @@ topBoxRender:
 	sta PPUDATA
 
 	lda #$20
-	sta BOX_COUNTER_HI
+	sta BOX_PREV_ADDR_HI
 	lda #$41
-	sta BOX_COUNTER_HI
+	sta BOX_PREV_ADDR_LOW	
 	ldy #$00
 
+midBoxRender:
+	cpy #$0A
+	beq initBottomBoxRender
 
-
-initStringRender:
-	lda #$21	;High Byte
+	lda BOX_PREV_ADDR_LOW
+	adc #$20
+	
+	sta BOX_PREV_ADDR_LOW
+	sta BOX_ADDR_LOW
+	
+	lda BOX_PREV_ADDR_HI
+	adc #$00
+	
+	sta BOX_PREV_ADDR_HI
+	sta BOX_ADDR_HI
+	
+	lda BOX_PREV_ADDR_HI
 	sta PPUADDR
-	lda #$02	;Low Byte
-	sta PPUADDR
-	ldx #$01
-	ldy #$00
 
-stringRender:
-	lda stringTest, x
+	lda BOX_PREV_ADDR_LOW
+	sta PPUADDR
+
+	lda #$1D
 	sta PPUDATA
-	txa
+
+	lda BOX_ADDR_LOW
+	adc #$1D
+	sta BOX_ADDR_LOW
+	
+	lda BOX_ADDR_HI
+	adc #$00
+	sta BOX_ADDR_HI
+
+	lda BOX_ADDR_HI
+	sta PPUADDR
+
+	lda BOX_ADDR_LOW
+	sta PPUADDR
+
+	lda #$1F
+	sta PPUDATA
+
+	iny
+	jmp midBoxRender
+
+initBottomBoxRender:
+	lda #$21
+	sta PPUADDR
+	lda #$A1
+	sta PPUADDR
+
+	lda #$20
+	sta PPUDATA
+
+	lda #$21
+	sta PPUADDR
+
+	lda #$BE
+	sta PPUADDR
+
+	lda #$22
+	sta PPUDATA
+
+	lda #$21
+	sta PPUADDR
+	lda #$A2
+	sta PPUADDR
+
+	ldx #00
+
+bottomBoxRender:
+	lda #$21
+	sta PPUDATA
+
 	inx
-	cmp CHAR_COUNTER
-	beq updateStringRender
-	bne stringRender
-
-addCharToRender:
-	tax
-	inx
-	stx CHAR_COUNTER
-	jmp scroll
-
-endRender:
-	lda #$01
-	cmp IS_RENDER_DONE
-	beq scroll
-	sta IS_RENDER_DONE
-	jmp scroll
-
-updateStringRender:
-	ldx IS_RENDER_DONE
-	cpx #$01
-	beq endRender
-	lda CHAR_COUNTER
-	cmp CHAR_MAX_LENGTH
-	bne addCharToRender
-	beq endRender
+	cpx #$1C
+	bne bottomBoxRender
 
 scroll:
 	; X Axis Scroll
@@ -243,6 +280,38 @@ scroll:
 .byte 255
 .byte 255
 .byte 255
+
+.byte 7
+
+.byte 31
+
+.byte 63
+
+.byte 119
+
+.byte 127
+
+.byte 253
+
+.byte 239
+
+.byte 255
+
+.byte 7
+
+.byte 28
+
+.byte 32
+
+.byte 72
+
+.byte 64
+
+.byte 130
+
+.byte 144
+
+.byte 128
 
 .segment "CHR0b"
 .include "charset.s"

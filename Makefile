@@ -11,7 +11,7 @@ clean:
 # Assemble
 
 %.o: %.s
-	ca65 $< -o $@
+	ca65 $< -o $@ 
 
 main.o: main.s defs.s
 header.o: header.s
@@ -19,4 +19,4 @@ header.o: header.s
 # Link
 
 ctnes.nes: link.x $(objs)
-	ld65 -C link.x $(objs) -o $@
+	ld65 -C link.x $(objs) -o $@ -Ln labels.txt

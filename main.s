@@ -227,6 +227,39 @@ bottomBoxRender:
 	cpx #$1C
 	bne bottomBoxRender
 
+initStringRender:
+	lda #$01
+	cmp IS_RENDER_DONE
+	beq scroll
+
+	lda #$20
+	sta PPUADDR
+	lda #$63
+	sta PPUADDR
+
+	ldx #$01
+	stx CHAR_COUNTER
+
+stringRender:
+	lda CHAR_MAX_LENGTH
+	cmp CHAR_COUNTER
+	beq endRender
+
+	lda stringTest, x
+	sta PPUDATA
+
+	txa
+	cmp CHAR_COUNTER
+	bne stringRender
+
+	inx
+	stx CHAR_COUNTER
+	jmp scroll
+
+endRender:
+	lda #$01
+	sta IS_RENDER_DONE
+
 scroll:
 	; X Axis Scroll
 	lda #$0
@@ -262,56 +295,7 @@ scroll:
 ;;; CHR data
 
 .segment "CHR0a"
-
-; Sample Box Sprite
-.byte 255
-.byte 129
-.byte 129
-.byte 129
-.byte 129
-.byte 129
-.byte 129
-.byte 255
-.byte 255
-.byte 255
-.byte 255
-.byte 255
-.byte 255
-.byte 255
-.byte 255
-.byte 255
-
-.byte 7
-
-.byte 31
-
-.byte 63
-
-.byte 119
-
-.byte 127
-
-.byte 253
-
-.byte 239
-
-.byte 255
-
-.byte 7
-
-.byte 28
-
-.byte 32
-
-.byte 72
-
-.byte 64
-
-.byte 130
-
-.byte 144
-
-.byte 128
+.include "sprites.s"
 
 .segment "CHR0b"
 .include "charset.s"

@@ -1,6 +1,22 @@
 .include "defs.s"
 .include "colorPallete.s"
 
+.struct Sprite
+	ypos   .byte
+	id     .byte
+	attrib .byte
+	xpos   .byte
+.endStruct
+
+.struct MetaSprite
+	sp1 .tag Sprite
+	sp2 .tag Sprite
+	sp3 .tag Sprite
+	sp4 .tag Sprite
+.endStruct
+
+virusSprite: .tag MetaSprite
+
 .code
 
 ;;; ----------------------------------------------------------------------------
@@ -19,7 +35,6 @@
 	lda #$0
 
 	;; PPU warmup, wait two frames, plus a third later.
-	;; http://forums.nesdev.com/viewtopic.php?f=2&t=3958
 :	bit PPUSTATUS
 	bpl :-
 :	bit PPUSTATUS
@@ -85,7 +100,7 @@ ppu:
 	sta PPUMASK
 
 initString:
-	lda #$00
+	lda #$01
 	sta CHAR_COUNTER
 	
 	ldy #00
@@ -94,6 +109,15 @@ initString:
 	
 	lda #$00
 	sta IS_RENDER_DONE
+
+initVirusSprite:
+	lda #$00000000
+	sta virusSprite+MetaSprite::sp1+Sprite::attrib
+	lda #$01
+	sta virusSprite+MetaSprite::sp1+Sprite::id
+	lda #$50
+	sta virusSprite+MetaSprite::sp1+Sprite::ypos
+	sta virusSprite+MetaSprite::sp1+Sprite::xpos
 
 infinite:
 	jmp infinite
@@ -150,7 +174,7 @@ topBoxRender:
 	ldy #$00
 
 midBoxRender:
-	cpy #$0A
+	cpy #$03
 	beq initBottomBoxRender
 
 	lda BOX_PREV_ADDR_LOW
@@ -195,26 +219,25 @@ midBoxRender:
 	jmp midBoxRender
 
 initBottomBoxRender:
-	lda #$21
+	lda #$20
 	sta PPUADDR
-	lda #$A1
+	lda #$C1
 	sta PPUADDR
 
 	lda #$20
 	sta PPUDATA
 
-	lda #$21
+	lda #$20
 	sta PPUADDR
-
-	lda #$BE
+	lda #$DE
 	sta PPUADDR
 
 	lda #$22
 	sta PPUDATA
 
-	lda #$21
+	lda #$20
 	sta PPUADDR
-	lda #$A2
+	lda #$C2
 	sta PPUADDR
 
 	ldx #00
@@ -238,7 +261,6 @@ initStringRender:
 	sta PPUADDR
 
 	ldx #$01
-	stx CHAR_COUNTER
 
 stringRender:
 	lda CHAR_MAX_LENGTH
@@ -249,10 +271,10 @@ stringRender:
 	sta PPUDATA
 
 	txa
+	inx
 	cmp CHAR_COUNTER
 	bne stringRender
 
-	inx
 	stx CHAR_COUNTER
 	jmp scroll
 
@@ -268,6 +290,57 @@ scroll:
 	; Y Axis Scroll
 	lda #$0
 	sta PPUSCROLL
+
+spriteRender:
+	lda #$00
+	sta OAMADDR_LOW
+	lda #$02
+	sta OAMADDR_HI
+
+;	lda virusSprite+MetaSprite::sp1+Sprite::ypos
+;	sta $0200
+;	lda virusSprite+MetaSprite::sp1+Sprite::id
+;	sta $0201
+;	lda virusSprite+MetaSprite::sp1+Sprite::attrib
+;	sta $0202
+;	lda virusSprite+MetaSprite::sp1+Sprite::xpos
+;	sta $0203
+
+	lda #$50
+	sta OAMDATA
+	lda #$01
+	sta OAMDATA
+	lda #$0
+	sta OAMDATA
+	lda #$50
+	sta OAMDATA
+
+	lda #$50
+	sta OAMDATA
+	lda #$01
+	sta OAMDATA
+	lda #%01000000
+	sta OAMDATA
+	lda #$58
+	sta OAMDATA
+
+	lda #$58
+	sta OAMDATA
+	lda #$01
+	sta OAMDATA
+	lda #%10000000
+	sta OAMDATA
+	lda #$50
+	sta OAMDATA
+
+	lda #$58
+	sta OAMDATA
+	lda #$01
+	sta OAMDATA
+	lda #%11000000
+	sta OAMDATA
+	lda #$58
+	sta OAMDATA
 
 	rti
 

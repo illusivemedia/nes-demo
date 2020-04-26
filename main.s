@@ -1,6 +1,22 @@
 .include "defs.s"
 .include "colorPallete.s"
 
+.struct Sprite
+	ypos   .byte
+	id     .byte
+	attrib .byte
+	xpos   .byte
+.endStruct
+
+.struct MetaSprite
+	sp1 .tag Sprite
+	sp2 .tag Sprite
+	sp3 .tag Sprite
+	sp4 .tag Sprite
+.endStruct
+
+virusSprite: .tag MetaSprite
+
 .code
 
 ;;; ----------------------------------------------------------------------------
@@ -19,7 +35,6 @@
 	lda #$0
 
 	;; PPU warmup, wait two frames, plus a third later.
-	;; http://forums.nesdev.com/viewtopic.php?f=2&t=3958
 :	bit PPUSTATUS
 	bpl :-
 :	bit PPUSTATUS
@@ -42,40 +57,52 @@
 :	bit PPUSTATUS
 	bpl :-
 
-paletteInit:
+bgPaletteInit:
 	lda #$3f
 	sta PPUADDR
 	
 	lda #$00
 	sta PPUADDR
 	
-	ldx #$0
-
-	lda RED_0
+	lda #$6
 	sta PPUDATA
 
 	lda #$3f
+	sta BG_PALLETE_ADDR_HI
 	sta PPUADDR
 	
 	lda #$01
+	sta BG_PALLETE_ADDR_LOW
+	sta PPUADDR
+	
+	ldx #$0
+	ldy #$0
+
+	jmp bgPalette
+
+nextBgPallete:
+	clc
+	ldy #$0
+	cpx #$18
+	beq ppu
+
+	lda BG_PALLETE_ADDR_HI
 	sta PPUADDR
 
-bgPalette1:
+	lda BG_PALLETE_ADDR_LOW
+	adc #$04
+	sta PPUADDR
+	sta BG_PALLETE_ADDR_LOW
+
+bgPalette:
 	lda colorPallete, x
 	sta PPUDATA
 	inx
-	cpx #$C
-	bne bgPalette1
-	
-	ldx #$0
-
-spritePalette:
-	inx
-	stx $2007
-	cpx #$10
-	bne spritePalette
-	ldx #$00
-	clc
+	iny
+	cpy #$3
+	beq nextBgPallete
+	bne bgPalette
+	ldy #$0
 
 ; start ppu
 ppu:
@@ -85,7 +112,7 @@ ppu:
 	sta PPUMASK
 
 initString:
-	lda #$00
+	lda #$01
 	sta CHAR_COUNTER
 	
 	ldy #00
@@ -95,8 +122,78 @@ initString:
 	lda #$00
 	sta IS_RENDER_DONE
 
+initVirusSprite:
+	lda #$00000000
+	sta virusSprite+MetaSprite::sp1+Sprite::attrib
+	lda #$01
+	sta virusSprite+MetaSprite::sp1+Sprite::id
+	lda #$50
+	sta virusSprite+MetaSprite::sp1+Sprite::ypos
+	sta virusSprite+MetaSprite::sp1+Sprite::xpos
+
+initVirusPos:
+	lda #$77
+	sta VIRUS1_POS_Y
+	sta VIRUS1_POS_X
+	lda #$0
+	sta VIRUS1_POS_Y_POLARITY
+
+initToken:
+	lda #$0
+	sta TOKEN
+
 infinite:
+	lda #$0
+	cmp TOKEN
+	beq onUpdate
 	jmp infinite
+
+onUpdate:
+	lda #$01
+	sta TOKEN
+
+checkVirusPos:
+	ldx VIRUS1_POS_Y
+
+	cpx #$D7
+	beq virusPolarityUp
+	
+	clc
+	
+	cpx #55
+	beq virusPolarityDown
+
+	clc
+
+	ldx VIRUS1_POS_Y_POLARITY
+	cpx #$00
+	beq virusDown
+	bne virusUp
+
+virusPolarityUp:
+	lda #$01
+	sta VIRUS1_POS_Y_POLARITY
+	jmp virusUp
+
+virusPolarityDown:
+	lda #$00
+	sta VIRUS1_POS_Y_POLARITY
+	jmp virusDown
+
+virusDown:
+	ldx VIRUS1_POS_Y
+	inx
+	inx
+	stx VIRUS1_POS_Y
+	jmp infinite
+
+virusUp:
+	ldx VIRUS1_POS_Y
+	dex
+	dex
+	stx VIRUS1_POS_Y
+	jmp infinite
+
 .endproc
 
 stringTest:
@@ -150,7 +247,7 @@ topBoxRender:
 	ldy #$00
 
 midBoxRender:
-	cpy #$0A
+	cpy #$03
 	beq initBottomBoxRender
 
 	lda BOX_PREV_ADDR_LOW
@@ -195,26 +292,25 @@ midBoxRender:
 	jmp midBoxRender
 
 initBottomBoxRender:
-	lda #$21
+	lda #$20
 	sta PPUADDR
-	lda #$A1
+	lda #$C1
 	sta PPUADDR
 
 	lda #$20
 	sta PPUDATA
 
-	lda #$21
+	lda #$20
 	sta PPUADDR
-
-	lda #$BE
+	lda #$DE
 	sta PPUADDR
 
 	lda #$22
 	sta PPUDATA
 
-	lda #$21
+	lda #$20
 	sta PPUADDR
-	lda #$A2
+	lda #$C2
 	sta PPUADDR
 
 	ldx #00
@@ -227,6 +323,38 @@ bottomBoxRender:
 	cpx #$1C
 	bne bottomBoxRender
 
+initStringRender:
+	lda #$01
+	cmp IS_RENDER_DONE
+	beq scroll
+
+	lda #$20
+	sta PPUADDR
+	lda #$63
+	sta PPUADDR
+
+	ldx #$01
+
+stringRender:
+	lda CHAR_MAX_LENGTH
+	cmp CHAR_COUNTER
+	beq endRender
+
+	lda stringTest, x
+	sta PPUDATA
+
+	txa
+	inx
+	cmp CHAR_COUNTER
+	bne stringRender
+
+	stx CHAR_COUNTER
+	jmp scroll
+
+endRender:
+	lda #$01
+	sta IS_RENDER_DONE
+
 scroll:
 	; X Axis Scroll
 	lda #$0
@@ -235,6 +363,64 @@ scroll:
 	; Y Axis Scroll
 	lda #$0
 	sta PPUSCROLL
+
+spriteRender:
+	lda #$00
+	sta OAMADDR_LOW
+	lda #$02
+	sta OAMADDR_HI
+
+;	lda virusSprite+MetaSprite::sp1+Sprite::ypos
+;	sta $0200
+;	lda virusSprite+MetaSprite::sp1+Sprite::id
+;	sta $0201
+;	lda virusSprite+MetaSprite::sp1+Sprite::attrib
+;	sta $0202
+;	lda virusSprite+MetaSprite::sp1+Sprite::xpos
+;	sta $0203
+
+	lda VIRUS1_POS_Y
+	sta OAMDATA
+	lda #$01
+	sta OAMDATA
+	lda #$0
+	sta OAMDATA
+	lda VIRUS1_POS_X
+	sta OAMDATA
+
+	lda VIRUS1_POS_Y
+	sta OAMDATA
+	lda #$01
+	sta OAMDATA
+	lda #%01000000
+	sta OAMDATA
+	lda VIRUS1_POS_X
+	adc #$07
+	sta OAMDATA
+
+	lda VIRUS1_POS_Y
+	adc #$08
+	sta OAMDATA
+	lda #$01
+	sta OAMDATA
+	lda #%10000000
+	sta OAMDATA
+	lda VIRUS1_POS_X
+	sta OAMDATA
+
+	lda VIRUS1_POS_Y
+	adc #$08
+	sta OAMDATA
+	lda #$01
+	sta OAMDATA
+	lda #%11000000
+	sta OAMDATA
+	lda VIRUS1_POS_X
+	adc #$08
+	sta OAMDATA
+
+	lda #$0
+	sta TOKEN
 
 	rti
 
@@ -262,56 +448,7 @@ scroll:
 ;;; CHR data
 
 .segment "CHR0a"
-
-; Sample Box Sprite
-.byte 255
-.byte 129
-.byte 129
-.byte 129
-.byte 129
-.byte 129
-.byte 129
-.byte 255
-.byte 255
-.byte 255
-.byte 255
-.byte 255
-.byte 255
-.byte 255
-.byte 255
-.byte 255
-
-.byte 7
-
-.byte 31
-
-.byte 63
-
-.byte 119
-
-.byte 127
-
-.byte 253
-
-.byte 239
-
-.byte 255
-
-.byte 7
-
-.byte 28
-
-.byte 32
-
-.byte 72
-
-.byte 64
-
-.byte 130
-
-.byte 144
-
-.byte 128
+.include "sprite.s"
 
 .segment "CHR0b"
 .include "charset.s"

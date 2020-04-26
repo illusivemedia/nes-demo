@@ -57,40 +57,52 @@ virusSprite: .tag MetaSprite
 :	bit PPUSTATUS
 	bpl :-
 
-paletteInit:
+bgPaletteInit:
 	lda #$3f
 	sta PPUADDR
 	
 	lda #$00
 	sta PPUADDR
 	
-	ldx #$0
-
-	lda RED_0
+	lda #$6
 	sta PPUDATA
 
 	lda #$3f
+	sta BG_PALLETE_ADDR_HI
 	sta PPUADDR
 	
 	lda #$01
+	sta BG_PALLETE_ADDR_LOW
+	sta PPUADDR
+	
+	ldx #$0
+	ldy #$0
+
+	jmp bgPalette
+
+nextBgPallete:
+	clc
+	ldy #$0
+	cpx #$18
+	beq ppu
+
+	lda BG_PALLETE_ADDR_HI
 	sta PPUADDR
 
-bgPalette1:
+	lda BG_PALLETE_ADDR_LOW
+	adc #$04
+	sta PPUADDR
+	sta BG_PALLETE_ADDR_LOW
+
+bgPalette:
 	lda colorPallete, x
 	sta PPUDATA
 	inx
-	cpx #$C
-	bne bgPalette1
-	
-	ldx #$0
-
-spritePalette:
-	inx
-	stx $2007
-	cpx #$10
-	bne spritePalette
-	ldx #$00
-	clc
+	iny
+	cpy #$3
+	beq nextBgPallete
+	bne bgPalette
+	ldy #$0
 
 ; start ppu
 ppu:
@@ -119,8 +131,69 @@ initVirusSprite:
 	sta virusSprite+MetaSprite::sp1+Sprite::ypos
 	sta virusSprite+MetaSprite::sp1+Sprite::xpos
 
+initVirusPos:
+	lda #$77
+	sta VIRUS1_POS_Y
+	sta VIRUS1_POS_X
+	lda #$0
+	sta VIRUS1_POS_Y_POLARITY
+
+initToken:
+	lda #$0
+	sta TOKEN
+
 infinite:
+	lda #$0
+	cmp TOKEN
+	beq onUpdate
 	jmp infinite
+
+onUpdate:
+	lda #$01
+	sta TOKEN
+
+checkVirusPos:
+	ldx VIRUS1_POS_Y
+
+	cpx #$D7
+	beq virusPolarityUp
+	
+	clc
+	
+	cpx #55
+	beq virusPolarityDown
+
+	clc
+
+	ldx VIRUS1_POS_Y_POLARITY
+	cpx #$00
+	beq virusDown
+	bne virusUp
+
+virusPolarityUp:
+	lda #$01
+	sta VIRUS1_POS_Y_POLARITY
+	jmp virusUp
+
+virusPolarityDown:
+	lda #$00
+	sta VIRUS1_POS_Y_POLARITY
+	jmp virusDown
+
+virusDown:
+	ldx VIRUS1_POS_Y
+	inx
+	inx
+	stx VIRUS1_POS_Y
+	jmp infinite
+
+virusUp:
+	ldx VIRUS1_POS_Y
+	dex
+	dex
+	stx VIRUS1_POS_Y
+	jmp infinite
+
 .endproc
 
 stringTest:
@@ -306,41 +379,48 @@ spriteRender:
 ;	lda virusSprite+MetaSprite::sp1+Sprite::xpos
 ;	sta $0203
 
-	lda #$50
+	lda VIRUS1_POS_Y
 	sta OAMDATA
 	lda #$01
 	sta OAMDATA
 	lda #$0
 	sta OAMDATA
-	lda #$50
+	lda VIRUS1_POS_X
 	sta OAMDATA
 
-	lda #$50
+	lda VIRUS1_POS_Y
 	sta OAMDATA
 	lda #$01
 	sta OAMDATA
 	lda #%01000000
 	sta OAMDATA
-	lda #$58
+	lda VIRUS1_POS_X
+	adc #$07
 	sta OAMDATA
 
-	lda #$58
+	lda VIRUS1_POS_Y
+	adc #$08
 	sta OAMDATA
 	lda #$01
 	sta OAMDATA
 	lda #%10000000
 	sta OAMDATA
-	lda #$50
+	lda VIRUS1_POS_X
 	sta OAMDATA
 
-	lda #$58
+	lda VIRUS1_POS_Y
+	adc #$08
 	sta OAMDATA
 	lda #$01
 	sta OAMDATA
 	lda #%11000000
 	sta OAMDATA
-	lda #$58
+	lda VIRUS1_POS_X
+	adc #$08
 	sta OAMDATA
+
+	lda #$0
+	sta TOKEN
 
 	rti
 
